@@ -1,5 +1,6 @@
 import discord
 from discord.ext import tasks, commands
+from random import random
 import datetime as dt
 import json
 
@@ -79,6 +80,14 @@ async def on_message(message):
         await message.channel.send("Use !tunt garden X to display the beans needed for level X gardening, with the easiest combination shown first.")
         return
 
+    # stu id easter egg messages
+    if message.content.startswith("!morb"):
+        await message.channel.send("It's morbin' time!")
+        return
+    if message.content.startswith("!nene"):
+        await message.channel.send("https://www.youtube.com/watch?v=FdMxDzPIcsw")
+        return
+    
     # time notify handler
     if message.content.startswith("!time notify"):
         try:
@@ -177,3 +186,5 @@ class ReminderCog(commands.Cog):
         await self.channel.send("<@{0}> It's time to bing bong, you ding dong!".format(self.user.id))
 
 client.run(token)
+
+#this is just me trying to figure out how git works
