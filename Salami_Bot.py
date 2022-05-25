@@ -443,3 +443,5 @@ class ReminderCog(commands.Cog):
         await self.channel.send("<@{0}> It's time to bing bong, you ding dong!".format(self.user.id))
 
 client.run(token)
+
+#this is just me trying to figure out how git works
