@@ -49,6 +49,28 @@ gag_damage = [
 [10, 18, 30, 45, 70, 170, 180] # drop
 ]
 
+# dict for avg pots to max for each class. runs l to r as life, mana, att, def, spd, dex, vit, wis
+pots_to_max_dict = {
+    "rogue" : [19, 12, 21, 25, 32, 32, 16, 21],
+    "archer" : [19, 12, 35, 25, 19, 19, 19, 21],
+    "wizard" : [19, 19, 35, 25, 21, 32, 19, 29],
+    "priest" : [19, 19, 19, 25, 15, 24, 21, 32],
+    "warrior" : [19, 12, 32, 25, 24, 21, 37, 21],
+    "knight" : [19, 12, 7, 40, 24, 21, 37, 21],
+    "paladin" : [19, 12, 10, 30, 24, 16, 21, 37],
+    "assassin" : [19, 12, 29, 25, 32, 32, 16, 22],
+    "necromancer" : [19, 19, 35, 25, 21, 17, 11, 35],
+    "huntress" : [19, 12, 35, 25, 19, 19, 19, 21],
+    "mystic" : [19, 19, 22, 25, 29, 26, 16, 32],
+    "trickster" : [19, 12, 27, 25, 35, 32, 19, 29],
+    "sorcerer" : [19, 19, 22, 25, 20, 19, 37, 17],
+    "ninja" : [19, 12, 27, 25, 31, 30, 21, 30],
+    "samurai" : [19, 12, 35, 30, 26, 21, 20, 20],
+    "bard" : [19, 19, 17, 25, 26, 27, 14, 32],
+    "summoner" : [19, 19, 12, 25, 29, 32, 21, 32],
+    "kensei" : [19, 12, 24, 25, 31, 24, 29, 16]
+}
+
 # on init prints name and discord.py version
 @client.event
 async def on_ready():
@@ -64,20 +86,23 @@ async def on_message(message):
 
     # general help message
     if message.content.startswith("!help"):
-        await message.channel.send("Use !time help for info about reminders.")
-        await message.channel.send("Use !tunt help for info about toontown commands.")
+        await message.channel.send("Use `!time help` for info about reminders.")
+        await message.channel.send("Use `!tunt help` for info about toontown commands.")
         return
 
     # time specific help message
     if message.content.startswith("!time help"):
-        await message.channel.send("Use !time notify X to remind you X seconds before the hour.")
-        await message.channel.send("Use !time notify cancel to cancel the reminder.")
+        await message.channel.send("Use `!time notify X` to remind you X seconds before the hour.")
+        await message.channel.send("Use `!time notify cancel` to cancel the reminder.")
         return
 
     # toontown specific help message
     if message.content.startswith("!tunt help"):
-        await message.channel.send("Use !tunt garden X to display the beans needed for level X gardening, with the easiest combination shown first.")
+        await message.channel.send("Use `!tunt garden X` to display the beans needed for level X gardening, with the easiest combination shown first.")
         return
+
+    if message.content.startswith("!rotmg help")
+        await message.channel.send("Use `!rotmg roll <class> <life> <mana> <att> <def> <spd> <dex> <vit> <wis>` to see how good your roll is. Input remaining pots to max.")
 
     # stu id easter egg messages
     if message.content.startswith("!morb"):
@@ -140,6 +165,11 @@ async def on_message(message):
                 bean_text += "<:{0}bean:{1}>".format(bean, bean_dict[bean])
             await message.channel.send(bean_text)
         return
+
+    #rotmg stat roll handler
+    if message.content.startswith("!rotmg roll"):
+        try:
+            string = message.content[12:]
 
 # Cog class for reminder loop
 # pings user X seconds before each hour
