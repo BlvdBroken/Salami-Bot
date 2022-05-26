@@ -89,6 +89,7 @@ async def on_message(message):
     if message.content.startswith("!help"):
         await message.channel.send("Use `!time help` for info about reminders.")
         await message.channel.send("Use `!tunt help` for info about toontown commands.")
+        await message.channel.send("Use `!rotmg help` for info about rotmg commands.")
         return
 
     # time specific help message
@@ -102,8 +103,10 @@ async def on_message(message):
         await message.channel.send("Use `!tunt garden X` to display the beans needed for level X gardening, with the easiest combination shown first.")
         return
 
-    if message.content.startswith("!rotmg help")
+    # rotmg specific help message
+    if message.content.startswith("!rotmg help"):
         await message.channel.send("Use `!rotmg roll <class> <life> <mana> <att> <def> <spd> <dex> <vit> <wis>` to see how good your roll is. Input remaining pots to max.")
+        return
 
     # stu id easter egg messages
     if message.content.startswith("!morb"):
@@ -184,15 +187,15 @@ async def on_message(message):
                 await message.channel.send("Please enter exactly 8 stats.")
                 return
             char_diff = -char_stats+np.asarray(pots_to_max_dict[char_class])
-        except ValueError:
+        except (ValueError, IndexError):
             # no input / not integers
-            await message.channel.send("You are on crack. Get a grip.")
+            await message.channel.send("The numbers, Mason, what do they mean?")
             return
-        char_diff = np.array(map(str, char_diff))
+        char_diff = char_diff.astype(str)
         for x in range(8):
             if(char_diff[x][0] != '-'):
                 char_diff[x] = '+' + char_diff[x]
-        await message.channel.send("Life: " + char_diff[0] + "Mana: " + char_diff[1] + "Attack: " + char_diff[2] + "Defense: " + char_diff[3] + "Speed: " + char_diff[4] + "Dexterity: " + char_diff[5] + "Vitality: " + char_diff[6] + "Wisdom: " + char_diff[7])
+        await message.channel.send("Life: " + char_diff[0] + "\nMana: " + char_diff[1] + "\nAttack: " + char_diff[2] + "\nDefense: " + char_diff[3] + "\nSpeed: " + char_diff[4] + "\nDexterity: " + char_diff[5] + "\nVitality: " + char_diff[6] + "\nWisdom: " + char_diff[7])
         return
 
 # Cog class for reminder loop
