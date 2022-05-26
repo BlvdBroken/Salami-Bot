@@ -195,8 +195,6 @@ async def on_message(message):
         await message.channel.send("Life: " + char_diff[0] + "Mana: " + char_diff[1] + "Attack: " + char_diff[2] + "Defense: " + char_diff[3] + "Speed: " + char_diff[4] + "Dexterity: " + char_diff[5] + "Vitality: " + char_diff[6] + "Wisdom: " + char_diff[7])
         return
 
-
-
 # Cog class for reminder loop
 # pings user X seconds before each hour
 class ReminderCog(commands.Cog):
