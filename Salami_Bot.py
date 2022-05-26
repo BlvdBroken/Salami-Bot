@@ -2,6 +2,21 @@ import discord
 from discord.ext import tasks, commands
 import datetime as dt
 import json
+import sqlite3
+
+#initialises sqlite db, with db file named salami.db
+db=sqlite3.connect("salami.db")
+cursor=db.cursor()
+
+#helper for sql commands
+def execute(command):
+    global db   
+    global cursor
+    print(command)
+    cursor.execute(command)
+    db.commit()
+    return
+
 
 # opens a json with the token for obfuscation
 with open('config.json') as f:
@@ -66,6 +81,7 @@ async def on_message(message):
     if message.content.startswith("!help"):
         await message.channel.send("Use !time help for info about reminders.")
         await message.channel.send("Use !tunt help for info about toontown commands.")
+        await message.channel.send("Use !morb help to learn more about the art of morbing.")
         return
 
     # time specific help message
@@ -79,10 +95,25 @@ async def on_message(message):
         await message.channel.send("Use !tunt garden X to display the beans needed for level X gardening, with the easiest combination shown first.")
         return
 
+
     # stu id easter egg messages
-    if message.content.startswith("!morb"):
-        await message.channel.send("It's morbin' time!")
+    #morb specific help message
+    if message.content.startswith("!morb help"):
+        await message.channel.send("Use !morb to morb.")
+        await message.channel.send("Use !morb stats to get some stats on your morbing")
         return
+    #gets the number of times a user has morbed, and dispplays
+    elif message.content.startswith("!morb stats"):
+        execute('SELECT morbCount FROM morbStats WHERE userID="'+message.author.id+'";')
+        morbCount=cursor.fetchall()[0][0]
+        await message.channel.send("you have morbed "+str(morbCount)+" times. Keep on morbing!")
+        return
+    #morbs and increases users morb counter by 1
+    elif message.content.startswith("!morb"):
+        await message.channel.send("It's morbin' time!")
+        execute('UPDATE morbStats SET morbCount=morbCount+1 WHERE userID="'+message.author.id+'";')
+        return      
+
 
     if message.content.startswith("!nene"):
         await message.channel.send("https://www.youtube.com/watch?v=FdMxDzPIcsw")
