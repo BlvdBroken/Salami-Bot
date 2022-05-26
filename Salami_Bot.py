@@ -2,6 +2,7 @@ import discord
 from discord.ext import tasks, commands
 import datetime as dt
 import json
+import numpy as np # yeah, im a physicist,
 
 # opens a json with the token for obfuscation
 with open('config.json') as f:
@@ -169,7 +170,32 @@ async def on_message(message):
     #rotmg stat roll handler
     if message.content.startswith("!rotmg roll"):
         try:
-            string = message.content[12:]
+            # parse message into data
+            params = message.content[12:]
+            arr = params.split()
+            char_class = arr[0].lower()
+            char_stats = arr[1:]
+            char_stats = np.asarray(char_stats).astype(int)
+            # denies incorrect input
+            if(not (char_class in pots_to_max_dict.keys())):
+                await message.channel.send("Please input a valid class.")
+                return
+            if(char_stats.size != 8):
+                await message.channel.send("Please enter exactly 8 stats.")
+                return
+            char_diff = -char_stats+np.asarray(pots_to_max_dict[char_class])
+        except ValueError:
+            # no input / not integers
+            await message.channel.send("You are on crack. Get a grip.")
+            return
+        char_diff = np.array(map(str, char_diff))
+        for x in range(8):
+            if(char_diff[x][0] != '-'):
+                char_diff[x] = '+' + char_diff[x]
+        await message.channel.send("Life: " + char_diff[0] + "Mana: " + char_diff[1] + "Attack: " + char_diff[2] + "Defense: " + char_diff[3] + "Speed: " + char_diff[4] + "Dexterity: " + char_diff[5] + "Vitality: " + char_diff[6] + "Wisdom: " + char_diff[7])
+        return
+
+
 
 # Cog class for reminder loop
 # pings user X seconds before each hour
