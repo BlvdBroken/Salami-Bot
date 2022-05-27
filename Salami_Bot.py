@@ -3,6 +3,9 @@ from discord.ext import tasks, commands
 import datetime as dt
 import json
 import numpy as np # yeah, im a physicist,
+from discord import app_commands
+from typing import Optional
+import math
 
 # opens a json with the token for obfuscation
 with open('config.json') as f:
@@ -13,10 +16,17 @@ with open('config.json') as f:
 intents = discord.Intents.all()
 client = discord.Client(intents=intents)
 
+# this client's command tree (or list of inbuilt commands)
+general_tree = discord.app_commands.CommandTree(client)
+# group for toontown commands (allows for multiple tunt slash commands)
+tuntGroup = app_commands.Group(name="tunt", description="Toontown commands")
+# add group(s) to the command tree
+general_tree.add_command(tuntGroup)
+
 # dict to keep track of who asks for a reminder, author.id : ReminderCog
 user_reminder_cogs_dict = {}
 
-# bean color : emoji id
+# dict for bean color : emoji id
 bean_dict = {
 "b" : "978771714576121867",
 "c" : "978771675506159668",
@@ -39,15 +49,6 @@ garden_beans = [
 ["crvvvv", "ybcvbb", "vrrrvv", "oppobp", "rporop"],
 ["pggggyg", "ygroggg", "cvcbcbb", "bvbvcbb", "rcopvcc"],
 ["cbyycbyy", "ybvcvrov", "vyyvyovy", "bppbroyy", "rbvvbbpb"]
-]
-
-# gag damages for each line in order
-gag_damage = [
-[12, 20, 35, 50, 85, 180, 200], # trap
-[4, 7, 11, 16, 21, 50, 90], # sound
-[6, 10, 17, 27, 40, 100, 120], # throw
-[4, 8, 12, 21, 30, 80, 105], # squirt
-[10, 18, 30, 45, 70, 170, 180] # drop
 ]
 
 # dict for avg pots to max for each class. runs l to r as life, mana, att, def, spd, dex, vit, wis
@@ -85,6 +86,12 @@ async def on_message(message):
     if message.author == client.user:
         return
 
+    # use only if adding/changing a slash command
+    if message.content.startswith("!update"):
+        await general_tree.sync()
+        await message.channel.send("Commands successfully updated.")
+        return
+
     # general help message
     if message.content.startswith("!help"):
         await message.channel.send("Use `!time help` for info about reminders.")
@@ -96,11 +103,12 @@ async def on_message(message):
     if message.content.startswith("!time help"):
         await message.channel.send("Use `!time notify X` to remind you X seconds before the hour.")
         await message.channel.send("Use `!time notify cancel` to cancel the reminder.")
-        return
+        return  
 
     # toontown specific help message
     if message.content.startswith("!tunt help"):
         await message.channel.send("Use `!tunt garden X` to display the beans needed for level X gardening, with the easiest combination shown first.")
+        await message.channel.send("Use `/tunt kill` to see if a group of gags kills a cog.\nThe format for a gag is xxN where xx is the first two letters of a gag track and N is the level the gag is.\nFor an organic gag, add an \'o\' to the end of the gag.\nGag tracks include trap(tr), sound(so), throw(th), squirt(sq), and drop(dr).")
         return
 
     # rotmg specific help message
@@ -170,7 +178,7 @@ async def on_message(message):
             await message.channel.send(bean_text)
         return
 
-    #rotmg stat roll handler
+    # rotmg stat roll handler
     if message.content.startswith("!rotmg roll"):
         try:
             # parse message into data
@@ -197,6 +205,167 @@ async def on_message(message):
                 char_diff[x] = '+' + char_diff[x]
         await message.channel.send("Life: " + char_diff[0] + "\nMana: " + char_diff[1] + "\nAttack: " + char_diff[2] + "\nDefense: " + char_diff[3] + "\nSpeed: " + char_diff[4] + "\nDexterity: " + char_diff[5] + "\nVitality: " + char_diff[6] + "\nWisdom: " + char_diff[7])
         return
+
+# class to keep track of a cog and damage done to it for /tunt kill
+class tuntCog():
+
+    # int level, int lured, int vTwo, Channel channel
+    def __init__(self, level, lured, vTwo, channel):
+        self.channel = channel
+        self.level = level
+        self.health = ((level + 1) * (level + 2)) if (level < 12) else ((level + 1) * (level + 2) + 14)
+        self.lured = lured
+        self.vTwo = vTwo
+        # dictionary of tuples with an array of tuples
+        # (int, int, (int, String)[])
+        # name key : (total damage, times hit, (gag damage, gag name)[])
+        # im so sorry
+        self.damage = {
+        "tr" : (0, 0, [(0,"null"), (12,"Banana Peel"), (20,"Rake"), (35,"Marbles"), (50,"Quicksand"), (85,"Trapdoor"), (180,"TNT"), (200,"Railroad")]), # trap
+        "so" : (0, 0, [(0,"null"), (4,"Bike Horn"), (7,"Whistle"), (11,"Bugle"), (16,"Aoogah"), (21,"Elephant Trunk"), (50,"Foghorn"), (90,"Opera Singer")]), # sound
+        "th" : (0, 0, [(0,"null"), (6,"Cupcake"), (10,"Fruit Pie Slice"), (17,"Cream Pie Slice"), (27,"Whole Fruit Pie"), (40,"Whole Cream Pie"), (100,"Birthday Cake"), (120,"Wedding Cake")]), # throw
+        "sq" : (0, 0, [(0,"null"), (4,"Squirting Flower"), (8,"Glass of Water"), (12,"Squirt Gun"), (21,"Seltzer Bottle"), (30,"Fire Hose"), (80,"Storm Cloud"), (105,"Geyser")]), # squirt
+        "dr" : (0, 0, [(0,"null"), (10,"Flower Pot"), (18,"Sandbag"), (30,"Anvil"), (45,"Big Weight"), (70,"Safe"), (170,"Grand Piano"), (180,"Toontanic")]) # drop
+        }
+        # string returned in calc for response
+        self.attackString = "Using "
+        # set to true when invalid command passed
+        # initial value is dependant on whether lured and vTwo are either 0 or 1
+        self.broken = not (((self.lured == 0) or (self.lured == 1)) and ((self.vTwo == 0) or (self.vTwo == 1)))
+
+    # called for each gag passed in the slash command
+    # interprets string input and adds its name/damage to class variables
+    def attack(self, gag):
+        # checks if gag input is valid dict key
+        if not (self.damage.get(gag[:2], False)):
+            self.broken = True
+            return
+        # checks if gag input is integer level
+        try:
+            gagLevel = int(gag[2])
+            # checks if gag input is valid level
+            if ((gagLevel > 7) or (gagLevel < 1)):
+                self.broken = True
+                return
+        except ValueError:
+            self.broken = True
+            return
+        # example of String gag would be sq5o where gag[:2] is key name for self.damage and o is optional organic
+        gagString = self.damage[gag[:2]][2][int(gag[2])][1]
+        singleDamage = self.damage[gag[:2]][2][int(gag[2])][0]
+        # checks if the length is long enough for organic and check if it is organic
+        if (len(gag) == 4):
+            if (gag[3] == 'o'):
+                # if it is organic change gag string and add the bonus damage
+                gagString = "organic " + gagString
+                singleDamage = math.floor(singleDamage * 1.1)
+        # if the cog is v2.0 subtract the armor (min damage is zero (probably))
+        if (self.vTwo == 1):
+            singleDamage = max(singleDamage - math.floor(self.level * 1.5), 0)
+        # scuffed way of editing the dict
+        # adds on the damage, adds one to the number of times track used, and just re-places the array tuple frankenstein's monster
+        self.damage[gag[:2]] = (self.damage[gag[:2]][0] + singleDamage, self.damage[gag[:2]][1] + 1, self.damage[gag[:2]][2])
+        # adds gag name to the string class variable
+        self.attackString += "{0} + ".format(gagString)
+
+    # called after all the gags are added
+    # calculates the total damage on a cog and formats and returns a response string
+    def calc(self):
+        if (self.broken):
+            return "Please input valid command."
+        # first part of the response becomes the gags used, lure/v2 status, level, and cog health
+        self.attackString = "{0} on a {1}level {2}{3} cog with {4} health.\n".format(self.attackString[:-3], "lured " if (self.lured == 1) else "", self.level, "v2.0" if (self.vTwo == 1) else "", self.health)
+        # init damages, seperate for lured handling
+        lureBonus = 0
+        trapDamage = 0
+        soundDamage = 0
+        throwDamage = 0
+        squirtDamage = 0
+        dropDamage = 0
+        # trap damage handler
+        trapDamage += self.damage.get("tr")[0]
+        # cancels trap if multiple
+        if (self.damage.get("tr")[1] > 1):
+            trapDamage = 0
+        # unlures trapped cogs
+        if (trapDamage > 0):
+            self.lured = 0
+        # sound damage handler
+        soundDamage += self.damage.get("so")[0]
+        # handles combo damage
+        if (self.damage.get("so")[1] > 1):
+            soundDamage = math.ceil(soundDamage * 1.2)
+        # unlures sounded cogs
+        if (soundDamage > 0):
+            self.lured = 0
+        # throw damage handler
+        throwDamage += self.damage.get("th")[0]
+        # calcs lure bonus damage and unlures thrown cogs
+        if (throwDamage > 0) and (self.lured == 1):
+            lureBonus = math.ceil(throwDamage * 0.5)
+            self.lured = 0
+        # handles combo damage
+        if (self.damage.get("th")[1] > 1):
+            throwDamage = math.ceil(throwDamage * 1.2)
+        # squirt damage handler
+        squirtDamage += self.damage.get("sq")[0]
+        # calcs lure bonus damage and unlures squirted cogs
+        if (squirtDamage > 0) and (self.lured == 1):
+            lureBonus = math.ceil(squirtDamage * 0.5)
+            self.lured = 0
+        # handles combo damage
+        if (self.damage.get("sq")[1] > 1):
+            squirtDamage = math.ceil(squirtDamage * 1.2)
+        # drop damage handler
+        dropDamage += self.damage.get("dr")[0]
+        # handles combo damage
+        if (self.damage.get("dr")[1] > 1):
+            dropDamage = math.ceil(dropDamage * 1.2)
+        # drop doesn't damage lured cogs you dummy
+        if (self.lured == 1):
+            self.attackString += "Should've used Sound to unlure the cogs.\n"
+            dropDamage = 0
+        # adds up track damages and lure bonus
+        totalDamage = trapDamage + soundDamage + throwDamage + squirtDamage + dropDamage + lureBonus
+        # adds how much cog was/wasn't killed by to the response string
+        if (self.health - totalDamage == 0):
+            self.attackString += "This kills exactly. God gamer alert."
+        elif (self.health - totalDamage < 0):
+            self.attackString += "This kills. You overkill by {0} damage.".format((totalDamage - self.health))
+        else:
+            self.attackString += "This does not kill. The cog is left with {0} health.".format((self.health - totalDamage))
+        return self.attackString
+        
+# subcommand of /tunt
+@tuntGroup.command()
+@app_commands.describe(
+    level='The level of the cog you\'re killing',
+    lured='1 if lured, 0 if unlured',
+    vtwo='1 if v2.0, 0 if not',
+    firstgag='First gag being used, see `!tunt help` for details.',
+    secondgag='(Optional) Second gag being used, see `!tunt help` for details.',
+    thirdgag='(Optional) Third gag being used, see `!tunt help` for details.',
+    fourthgag='(Optional) Fourth gag being used, see `!tunt help` for details.'
+)
+# second through fourth gags are optional in the command
+# reason why vtwo and not vTwo is capitals not allowed in interaction slash command arguments
+async def kill(interaction: discord.Interaction, level: int, lured: int, vtwo: int, firstgag : str, secondgag : Optional[str], thirdgag : Optional[str], fourthgag : Optional[str],):
+    """Checks if the given gags can kill a cog."""
+    # creates new cogToKill class
+    cogToKill = tuntCog(level, lured, vtwo, interaction.channel)
+    # first is not optional, always runs attack
+    cogToKill.attack(firstgag)
+    # next three are optional, so checks if none before "attacking"
+    if secondgag is not None:
+        cogToKill.attack(secondgag)
+    if thirdgag is not None:
+        cogToKill.attack(thirdgag)
+    if fourthgag is not None:
+        cogToKill.attack(fourthgag)
+    # responds with what calc returns after the attacks
+    # ephemeral=False means other people can see your command
+    await interaction.response.send_message(cogToKill.calc(), ephemeral=False)
+
 
 # Cog class for reminder loop
 # pings user X seconds before each hour
