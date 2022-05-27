@@ -1,5 +1,6 @@
 import discord
 from discord.ext import tasks, commands
+from random import random
 import datetime as dt
 import json
 import sqlite3
@@ -37,7 +38,7 @@ bean_dict = {
 "g" : "978771666589073448",
 "o" : "978771652924035082",
 "p" : "978771687644483655",
-"r" : "978771722838900786",
+"r" : "97877172283  8900786",
 "v" : "978771704643985439",
 "y" : "978771696351838208"
 }
@@ -217,3 +218,5 @@ class ReminderCog(commands.Cog):
         await self.channel.send("<@{0}> It's time to bing bong, you ding dong!".format(self.user.id))
 
 client.run(token)
+
+#this is just me trying to figure out how git works
