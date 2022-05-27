@@ -22,6 +22,28 @@ def execute(command):
     db.commit()
     return
 
+#returns true if user (using userID) has cog, false otherwise
+def isCogInDB(userID):
+    execute('SELECT COUNT() FROM users WHERE userID="'+userID+'";')
+    return int(cursor.fetchall()[0][0])!=0
+
+#adds cog to DB with time seconds, and in the channel channel.
+def addCogToDB(userID, time, channel):
+    execute('INSERT INTO reminderCogs VALUES("'+userID+'", '+time+',"'+channel+'");')
+    return
+
+#gets users time from db, based on userID. interpreted as # of seconds before each hour
+#returns tuple of (seconds, channel)
+def fetchTime(userID):
+    execute('SELECT seconds, channel FROM users WHERE userID="'+userID+'";')
+    return cursor.fetchall()[0]
+
+
+#removes a given users cog, this was written on my phone lol
+def removeCog(userID):
+    execute('DELETE FROM reminderCogs WHERE userID="'+userID+'";')
+    return
+
 
 # opens a json with the token for obfuscation
 with open('config.json') as f:
@@ -444,5 +466,3 @@ class ReminderCog(commands.Cog):
         await self.channel.send("<@{0}> It's time to bing bong, you ding dong!".format(self.user.id))
 
 client.run(token)
-
-#this is just me trying to figure out how git works
