@@ -164,14 +164,14 @@ async def on_message(message):
         return
     #gets the number of times a user has morbed, and dispplays
     elif message.content.startswith("!morb stats"):
-        execute('SELECT morbCount FROM morbStats WHERE userID="'+message.author.id+'";')
+        execute('SELECT morbCount FROM morbStats WHERE userID="'+str(message.author.id)+'";')
         morbCount=cursor.fetchall()[0][0]
         await message.channel.send("you have morbed "+str(morbCount)+" times. Keep on morbing!")
         return
     #morbs and increases users morb counter by 1
     elif message.content.startswith("!morb"):
         await message.channel.send("It's morbin' time!")
-        execute('UPDATE morbStats SET morbCount=morbCount+1 WHERE userID="'+message.author.id+'";')
+        execute('UPDATE morbStats SET morbCount=morbCount+1 WHERE userID="'+str(message.author.id)+'";')
         return      
 
 
