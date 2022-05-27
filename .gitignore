@@ -1,3 +1,4 @@
 # Ignores config file with Bot Token
 config.json
 dbtest.pi.py
+.gitignore
