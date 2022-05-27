@@ -1,11 +1,49 @@
 import discord
 from discord.ext import tasks, commands
+from random import random
 import datetime as dt
 import json
 import numpy as np # yeah, im a physicist,
 from discord import app_commands
 from typing import Optional
 import math
+import sqlite3
+
+#initialises sqlite db, with db file named salami.db
+db=sqlite3.connect("salami.db")
+cursor=db.cursor()
+
+#helper for sql commands
+def execute(command):
+    global db   
+    global cursor
+    print(command)
+    cursor.execute(command)
+    db.commit()
+    return
+
+#returns true if user (using userID) has cog, false otherwise
+def isCogInDB(userID):
+    execute('SELECT COUNT() FROM users WHERE userID="'+userID+'";')
+    return int(cursor.fetchall()[0][0])!=0
+
+#adds cog to DB with time seconds, and in the channel channel.
+def addCogToDB(userID, time, channel):
+    execute('INSERT INTO reminderCogs VALUES("'+userID+'", '+time+',"'+channel+'");')
+    return
+
+#gets users time from db, based on userID. interpreted as # of seconds before each hour
+#returns tuple of (seconds, channel)
+def fetchTime(userID):
+    execute('SELECT seconds, channel FROM users WHERE userID="'+userID+'";')
+    return cursor.fetchall()[0]
+
+
+#removes a given users cog, this was written on my phone lol
+def removeCog(userID):
+    execute('DELETE FROM reminderCogs WHERE userID="'+userID+'";')
+    return
+
 
 # opens a json with the token for obfuscation
 with open('config.json') as f:
@@ -97,6 +135,7 @@ async def on_message(message):
         await message.channel.send("Use `!time help` for info about reminders.")
         await message.channel.send("Use `!tunt help` for info about toontown commands.")
         await message.channel.send("Use `!rotmg help` for info about rotmg commands.")
+        await message.channel.send("Use `!morb help` to learn more about the art of morbing.")
         return
 
     # time specific help message
@@ -116,10 +155,25 @@ async def on_message(message):
         await message.channel.send("Use `!rotmg roll <class> <life> <mana> <att> <def> <spd> <dex> <vit> <wis>` to see how good your roll is. Input remaining pots to max.")
         return
 
+
     # stu id easter egg messages
-    if message.content.startswith("!morb"):
-        await message.channel.send("It's morbin' time!")
+    #morb specific help message
+    if message.content.startswith("!morb help"):
+        await message.channel.send("Use `!morb` to morb.")
+        await message.channel.send("Use `!morb stats` to get some stats on your morbing")
         return
+    #gets the number of times a user has morbed, and dispplays
+    elif message.content.startswith("!morb stats"):
+        execute('SELECT morbCount FROM morbStats WHERE userID="'+message.author.id+'";')
+        morbCount=cursor.fetchall()[0][0]
+        await message.channel.send("you have morbed "+str(morbCount)+" times. Keep on morbing!")
+        return
+    #morbs and increases users morb counter by 1
+    elif message.content.startswith("!morb"):
+        await message.channel.send("It's morbin' time!")
+        execute('UPDATE morbStats SET morbCount=morbCount+1 WHERE userID="'+message.author.id+'";')
+        return      
+
 
     if message.content.startswith("!nene"):
         await message.channel.send("https://www.youtube.com/watch?v=FdMxDzPIcsw")
