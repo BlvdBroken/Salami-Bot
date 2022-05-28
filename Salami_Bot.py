@@ -160,20 +160,32 @@ async def on_message(message):
     #morb specific help message
     if message.content.startswith("!morb help"):
         await message.channel.send("Use `!morb` to morb.")
-        await message.channel.send("Use `!morb stats` to get some stats on your morbing")
+        await message.channel.send("Use `!morb stats` to get some stats on your morbing.")
+        await message.channel.send("Use `!morb ranking` to find out who is more bius.")
         return
     #gets the number of times a user has morbed, and dispplays
     elif message.content.startswith("!morb stats"):
-        execute('SELECT morbCount FROM morbStats WHERE userID="'+message.author.id+'";')
+        execute('SELECT morbCount FROM morbStats WHERE userID="'+str(message.author.id)+'";')
         morbCount=cursor.fetchall()[0][0]
         await message.channel.send("you have morbed "+str(morbCount)+" times. Keep on morbing!")
+        return
+    #displays the ranking of who has morbed the most
+    elif message.content.startswith("!morb ranking"):
+        execute("SELECT userID, count FROM morbStats WHERE morbCount>0 ORDER BY morbCount DESC;")
+        out="Who is the most bius?"
+        i=1
+        for row in cursor.fetchall():
+            s="\n"+str(i)+". "+str(client.fetchUser(row[0]).username)+": "+row[1]+" morbs\n"
+            out+=s
+            i+=1 
+        await message.channel.send(out)
         return
     #morbs and increases users morb counter by 1
     elif message.content.startswith("!morb"):
         await message.channel.send("It's morbin' time!")
-        execute('UPDATE morbStats SET morbCount=morbCount+1 WHERE userID="'+message.author.id+'";')
-        return      
-
+        execute('UPDATE morbStats SET morbCount=morbCount+1 WHERE userID="'+str(message.author.id)+'";')
+        return  
+    
 
     if message.content.startswith("!nene"):
         await message.channel.send("https://www.youtube.com/watch?v=FdMxDzPIcsw")
