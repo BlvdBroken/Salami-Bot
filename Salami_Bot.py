@@ -171,11 +171,12 @@ async def on_message(message):
         return
     #displays the ranking of who has morbed the most
     elif message.content.startswith("!morb ranking"):
-        execute("SELECT userID, count FROM morbStats WHERE morbCount>0 ORDER BY morbCount DESC;")
+        execute("SELECT userID, morbCount FROM morbStats WHERE morbCount>0 ORDER BY morbCount DESC;")
         out="Who is the most bius?"
         i=1
         for row in cursor.fetchall():
-            s="\n"+str(i)+". "+str(client.fetchUser(row[0]).username)+": "+row[1]+" morbs\n"
+            fetched=await client.fetch_user(row[0])
+            s="\n"+str(i)+". "+str(fetched.name)+": "+str(row[1])+" morbs\n"
             out+=s
             i+=1 
         await message.channel.send(out)
