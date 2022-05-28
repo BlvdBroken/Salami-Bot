@@ -1,5 +1,6 @@
 import discord
 from discord.ext import tasks, commands
+from random import random
 import datetime as dt
 import json
 import numpy as np # yeah, im a physicist,
@@ -179,12 +180,12 @@ async def on_message(message):
             i+=1 
         await message.channel.send(out)
         return
+
     #morbs and increases users morb counter by 1
     elif message.content.startswith("!morb"):
         await message.channel.send("It's morbin' time!")
         execute('UPDATE morbStats SET morbCount=morbCount+1 WHERE userID="'+str(message.author.id)+'";')
-        return  
-    
+        return
 
     if message.content.startswith("!nene"):
         await message.channel.send("https://www.youtube.com/watch?v=FdMxDzPIcsw")
