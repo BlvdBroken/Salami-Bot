@@ -1,6 +1,5 @@
 import discord
 from discord.ext import tasks, commands
-from random import random
 import datetime as dt
 import json
 import numpy as np # yeah, im a physicist,
