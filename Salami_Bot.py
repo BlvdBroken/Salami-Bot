@@ -166,7 +166,7 @@ async def on_message(message):
     elif message.content.startswith("!morb stats"):
         execute('SELECT morbCount FROM morbStats WHERE userID="'+str(message.author.id)+'";')
         morbCount=cursor.fetchall()[0][0]
-        await message.channel.send("you have morbed "+str(morbCount)+" times. Keep on morbing!")
+        await message.channel.send("You have morbed "+str(morbCount)+" times. Keep on morbing!")
         return
     #morbs and increases users morb counter by 1
     elif message.content.startswith("!morb"):

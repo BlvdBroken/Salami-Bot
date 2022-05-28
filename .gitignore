@@ -1,7 +1,5 @@
 <<<<<<< HEAD
 # Ignores config file with Bot Token
 config.json
-=======
->>>>>>> 16481d80350bbb1dd64c413fc9f27e1648e09d64
 dbtest.pi.py
-.gitignore
+salami.db
