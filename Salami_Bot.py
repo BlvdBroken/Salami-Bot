@@ -476,6 +476,6 @@ class ReminderCog(commands.Cog):
     # the actual loop, interval is set before
     @tasks.loop()
     async def reminder(self):
-        await self.channel.send("<@{0}> It's time to bing bong, you ding dong!".format(self.user.id))
+        await self.user.send("<@{0}> It's time to bing bong, you ding dong!".format(self.user.id))
 
 client.run(token)
