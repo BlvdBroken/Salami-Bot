@@ -140,7 +140,7 @@ async def on_message(message):
 
     # time specific help message
     if message.content.startswith("!time help"):
-        await message.channel.send("Use `!time notify X` to Find you X seconds before the hour.")
+        await message.channel.send("Use `!time notify X` to remind you X seconds before the hour.")
         await message.channel.send("Use `!time notify cancel` to cancel the reminder.")
         return  
 
