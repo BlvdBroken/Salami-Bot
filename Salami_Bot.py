@@ -46,7 +46,7 @@ def removeCog(userID):
 
 
 # opens a json with the token for obfuscation
-with open('config.json') as f:
+with open('auth.json') as f:
     data = json.load(f)
     token = data["TOKEN"]
 
