@@ -17,7 +17,7 @@ cursor=db.cursor()
 def execute(command):
     global db   
     global cursor
-    print(command)
+    #print(command)
     cursor.execute(command)
     db.commit()
     return
@@ -38,12 +38,10 @@ def fetchTime(userID):
     execute('SELECT seconds, channel FROM users WHERE userID="'+userID+'";')
     return cursor.fetchall()[0]
 
-
 #removes a given users cog, this was written on my phone lol
 def removeCog(userID):
     execute('DELETE FROM reminderCogs WHERE userID="'+userID+'";')
     return
-
 
 # opens a json with the token for obfuscation
 with open('config.json') as f:
@@ -88,6 +86,24 @@ garden_beans = [
 ["pggggyg", "ygroggg", "cvcbcbb", "bvbvcbb", "rcopvcc"],
 ["cbyycbyy", "ybvcvrov", "vyyvyovy", "bppbroyy", "rbvvbbpb"]
 ]
+
+# mint data
+bullion = [1484, 1202, 1346, 1484, 1344,
+           1496, 1484, 1214, 1496, 1484,
+           1484, 1484, 1334, 1334, 1484,
+           1334, 1484, 1334, 1346, 1202]
+
+dollar = [804, 814, 679, 804, 914,
+          1004, 1004, 814, 679, 914,
+          914, 689, 679, 679, 914,
+          689, 914, 679, 914, 804]
+
+coin = [384, 536, 384, 544, 544,
+        356, 356, 356, 384, 384,
+        456, 384, 456 ,384, 544,
+        456, 536, 356, 536, 356]
+
+
 
 # dict for avg pots to max for each class. runs l to r as life, mana, att, def, spd, dex, vit, wis
 pots_to_max_dict = {
@@ -171,14 +187,18 @@ async def on_message(message):
         return
     #displays the ranking of who has morbed the most
     elif message.content.startswith("!morb ranking"):
+        ranks = [" 🥇", " 🥈", " 🥉", "", "", "", "", "", "", ""]
         execute("SELECT userID, morbCount FROM morbStats WHERE morbCount>0 ORDER BY morbCount DESC;")
         out="Who is the most bius?"
         i=1
         for row in cursor.fetchall():
             fetched=await client.fetch_user(row[0])
-            s="\n"+str(i)+". "+str(fetched.name)+": "+str(row[1])+" morbs\n"
-            out+=s
+            #s="\n"+str(i)+". "+str(fetched.name)+": "+str(row[1])+" morbs\n"
+            rankString = "\n{0}. {1}: {2} {3}{4}".format(str(i), str(fetched.name), str(row[1]), "morb" if (row[1] == 1) else "morbs", ranks[i - 1])
+            out+=rankString
             i+=1 
+            if (i == 11):
+                break
         await message.channel.send(out)
         return
 
@@ -433,6 +453,30 @@ async def kill(interaction: discord.Interaction, level: int, lured: int, vtwo: i
     # ephemeral=False means other people can see your command
     await interaction.response.send_message(cogToKill.calc(), ephemeral=False)
 
+# subcommand of /tunt
+@tuntGroup.command()
+@app_commands.describe(
+    level='The type of mint you are in',
+    floor='A number 1 through 20',
+)
+async def mint(interaction: discord.Interaction, level: str, floor: int):
+    """Tells you how many Cogbucks a certain Mint will give."""
+    out = 0
+    bad = (1 > floor > 20)
+    match level.lower():
+        case "coin":
+            out = coin[floor - 1]
+        case "dollar":
+            out = dollar[floor - 1]
+        case "bullion":
+            out = bullion[floor - 1]
+        case _:
+            bad = True
+    await interaction.response.send_message(
+        "You will recieve {0} Cogbucks.".format(out) if not bad else "Please input a valid command.",
+        ephemeral = False
+    )
+
 
 # Cog class for reminder loop
 # pings user X seconds before each hour
@@ -476,6 +520,6 @@ class ReminderCog(commands.Cog):
     # the actual loop, interval is set before
     @tasks.loop()
     async def reminder(self):
-        await self.channel.send("<@{0}> It's time to bing bong, you ding dong!".format(self.user.id))
+        await self.user.send("It's time to bing bong, you ding dong!")
 
 client.run(token)
